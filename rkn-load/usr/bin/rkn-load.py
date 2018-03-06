@@ -47,15 +47,11 @@ class Command(object):
 
 	def handle_signal(self, signum, frame):
 		print("Exitting on user's request")
-		if self.download is None:
-			exit(0)
-		else:
-			self.download.failed('Worker received a TERM/QUIT/INT signal')
-			exit(0)
+		exit(0)
 
 	def handle_exception(e):
 		Setting.write('roskom:download_requested', '0')
-		self.download.failed(str(e))
+		#self.download.failed(str(e))
 		self.stderr.write(str(e))
 		exit(-1)
 
