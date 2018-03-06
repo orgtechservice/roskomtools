@@ -206,6 +206,6 @@ execution_seconds = (execution_time - (execution_minutes * 60))
 
 with open('result.txt', 'w') as f:
 	for link in available:
-		f.write("%s <%d>\n" % (link.url, link.checked))
+		f.write("%s <%d>\n" % (link['url'], link['checked']))
 
 print("---\nCheck finished in %dm:%.2fs using %d kb RES\nAvailable: %d, not available: %d" % (execution_minutes, execution_seconds, stat.ru_maxrss, available_count, total_count - available_count))
