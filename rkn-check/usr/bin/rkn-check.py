@@ -27,29 +27,6 @@ request_headers = {
 # Счётчик обработанных ссылок (для отображения прогресса)
 counter = 0
 
-# http://stackoverflow.com/questions/22492484/how-do-i-get-the-ip-address-from-a-http-request-using-the-requests-library
-try:
-	from requests.packages.urllib3.connectionpool import HTTPConnectionPool
-	from requests.packages.urllib3.exceptions import InsecureRequestWarning
-	requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-except:
-	print("Sadly, your version of Requests (python3-requests) is way too old")
-	sys.exit(-1)
-
-# Новый метод, который мы обезьянним методом воткнём вместо старого
-def _make_request(self, conn, method, url, **kwargs):
-	response = self._old_make_request(conn, method, url, **kwargs)
-	sock = getattr(conn, 'sock', False)
-	if sock:
-		setattr(response, 'peer', sock.getpeername())
-	else:
-		setattr(response, 'peer', None)
-	return response
-
-# Осуществляем подмену
-HTTPConnectionPool._old_make_request = HTTPConnectionPool._make_request
-HTTPConnectionPool._make_request = _make_request
-
 # Наш воркер
 class Worker(threading.Thread):
 	def __init__(self, thread_id, in_data, out_data, trace):
@@ -85,19 +62,23 @@ class Worker(threading.Thread):
 			if config.SEARCH_TEXT in content:
 				item['status'] = 'blocked'
 			else:
-				peer = response.raw._original_response.peer
-				if peer is not None:
-					try:
-						address = ipaddress.ip_address(peer[0])
-					except:
-						item['status'] = 'local-ip' # ???
-					else:
-						if address.is_private:
-							item['status'] = 'local-ip'
-						else:
-							item['status'] = 'available'
+				try:
+					peer = response.raw._connection.sock.getpeername()
+				except:
+					item['status'] = 'local-ip'
 				else:
-					item['status'] = 'available'
+					if peer is not None:
+						try:
+							address = ipaddress.ip_address(peer[0])
+						except:
+							item['status'] = 'local-ip' # ???
+						else:
+							if address.is_private:
+								item['status'] = 'local-ip'
+							else:
+								item['status'] = 'available'
+					else:
+						item['status'] = 'available'
 		except Exception as e:
 			item['status'] = 'failure'
 
