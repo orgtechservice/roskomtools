@@ -65,13 +65,13 @@ class Worker(threading.Thread):
 				try:
 					peer = response.raw._connection.sock.getpeername()
 				except:
-					item['status'] = 'local-ip'
+					item['status'] = 'available'
 				else:
 					if peer is not None:
 						try:
 							address = ipaddress.ip_address(peer[0])
 						except:
-							item['status'] = 'local-ip' # ???
+							item['status'] = 'available' # ???
 						else:
 							if address.is_private:
 								item['status'] = 'local-ip'
