@@ -11,6 +11,8 @@
 Сначала необходимо сгенерировать deb-пакеты.
 
 ```bash
+git clone https://github.com/orgtechservice/roskomtools.git
+cd roskomtools
 ./build.sh
 ```
 
