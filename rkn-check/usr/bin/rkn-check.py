@@ -7,6 +7,8 @@ import time, sys, threading, signal, ipaddress
 # Сторонние пакеты
 import requests
 from lxml import etree
+import os
+from subprocess import call
 
 # Наш конфигурационный файл
 sys.path.append('/etc/roskom')
@@ -190,3 +192,9 @@ with open('result.txt', 'w') as f:
 		f.write("%s <%d>\n" % (link['url'], link['checked']))
 
 print("---\nCheck finished in %dm:%.2fs using %d kb RES\nAvailable: %d, not available: %d" % (execution_minutes, execution_seconds, stat.ru_maxrss, available_count, total_count - available_count))
+
+cmdstring = "/usr/bin/curl -s -d \"chat_id=-100YOUR-CHAT-ID357&disable_web_page_preview=1&text=Checked %d, errors: %d\"" % (total_count, available_count) + " https://api.telegram.org/bot36YOUR-BOT-ID18:YOUR-BOT-IDsl-6BOT-IDY0/sendMessage"
+
+print (cmdstring)
+
+os.system( cmdstring )
