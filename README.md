@@ -37,3 +37,21 @@ sudo dpkg -i rkn-check.deb
 * ``failure`` — Ресурс успешно блокируется, произошла ошибка TCP
 * ``local-ip`` — Ресурс резолвится в локальный IP
 * ``available`` — Ресурс **не блокируется**
+
+
+## Telegram
+
+* Adjust string 202 of ``/usr/bin/rkn-check.py`` with your bot-ID and chat_ID
+
+```
+202 cmdstring = "/usr/bin/curl -s -d \"chat_id=-10CHAT-ID57&disable_web_page_preview=1&text=Checked %d, errors: %d\"" % (total_count, available_count) + " https://api.telegram.org/bot36BOT-ID8:AAEBOT-ID9Ksl-6ABOT-IDY0/sendMessage"
+203 
+204 print (cmdstring)
+205 
+206 os.system( cmdstring )
+
+```
+
+* ``GET handy tg output as`` - **Checked 121040, errors: 0**
+
+
