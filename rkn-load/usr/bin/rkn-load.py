@@ -9,9 +9,14 @@ from suds.client import Client
 from suds.sax.text import Text
 
 def file_get_contents(filename):
-	with open(filename, 'rb') as f:
-		data = f.read()
-	return data
+	try:
+		with open(filename, 'rb') as f:
+			data = f.read()
+	except Exception as e:
+		print(e)
+		return b''
+	else:
+		return data
 
 class RoskomAPI:
 	def __init__(self, url):
@@ -42,17 +47,14 @@ class Command(object):
 	client = None
 	service = None
 	code = None
-	download = None
 	api = None
 
 	def handle_signal(self, signum, frame):
 		print("Exitting on user's request")
 		exit(0)
 
-	def handle_exception(e):
-		Setting.write('roskom:download_requested', '0')
-		#self.download.failed(str(e))
-		self.stderr.write(str(e))
+	def handle_exception(self, e):
+		print(str(e))
 		exit(-1)
 
 	def handle(self):
@@ -70,6 +72,10 @@ class Command(object):
 		except Exception as e:
 			self.handle_exception(e)
 
+		if self.api.request_xml == "" or self.api.request_xml_sign == "":
+			print("No data in request.xml or in request.xml.sign")
+			exit(-1)
+
 		# Фактическая и записанная даты, можно сравнивать их и в зависимости от этого делать выгрузку, но мы сделаем безусловную
 		try:
 			dump_date = int(int(self.api.getLastDumpDate()) / 1000)
@@ -77,7 +83,6 @@ class Command(object):
 
 			if dump_date > our_last_dump:
 				print("New registry dump available, proceeding")
-				#Setting.write('roskom:lastDumpDate', str(dump_date))
 			else:
 				print("No changes in dump.xml, but forcing the process")
 		except Exception as e:
@@ -88,7 +93,6 @@ class Command(object):
 			response = self.api.sendRequest()
 			print("Request sent")
 			self.code = response['code'].decode('utf-8')
-			#self.download.set_code(self.code)
 		except Exception as e:
 			self.handle_exception(e)
 	
@@ -117,8 +121,6 @@ class Command(object):
 						file.extractall("")
 					
 					print("ZIP file extracted")
-					#Setting.write('roskom:update', int(time.time()))
-					#self.download.succeeded(len(data))
 					print("Job done!")
 					break
 				except Exception as e:
@@ -130,7 +132,6 @@ class Command(object):
 						continue
 					else:
 						error = result['resultComment'].decode('utf-8')
-						#self.download.failed(error)
 						print("getRclientesult failed with code %d: %s" % (result['resultCode'], error))
 						exit(-1)
 				except Exception as e:
@@ -139,3 +140,4 @@ class Command(object):
 if __name__ == '__main__':
 	command = Command()
 	command.handle()
+
