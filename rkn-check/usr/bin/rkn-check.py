@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Импорты Python
-import time, sys, threading, signal, ipaddress
+import time, sys, threading, signal, ipaddress, gc
 
 # Сторонние пакеты
 import requests
@@ -35,6 +35,7 @@ class Worker(threading.Thread):
 		self.in_data = in_data
 		self.out_data = out_data
 		self.timeout = 3
+		self.iter_count = 0
 		self.total_count = len(in_data)
 		self.trace = trace
 
@@ -87,6 +88,10 @@ class Worker(threading.Thread):
 				self.report_progress(item)
 			self.out_data.append(item)
 
+		self.iter_count += 1
+		if (self.iter_count % 100) == 0:
+			gc.collect()
+
 	def set_timeout(self, new_timeout):
 		self.timeout = new_timeout
 
@@ -111,10 +116,8 @@ signal.signal(signal.SIGQUIT, signal_handler)
 
 def parse_registry(filename):
 	result = []
-
-	with open(filename, 'rb') as file:
-		tree = etree.fromstring(file.read())
-		
+	
+	tree = etree.parse(filename)	
 	records = tree.xpath('//content')
 	for item in records:
 		try:
