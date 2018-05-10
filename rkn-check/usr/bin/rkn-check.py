@@ -58,7 +58,7 @@ class Worker(threading.Thread):
 
 		try:
 			response = requests.get(item['url'], timeout = self.timeout, stream = True, headers = request_headers)
-			content = response.raw.read(100000, decode_content = True)
+			content = response.raw.read(10000, decode_content = True)
 
 			if config.SEARCH_TEXT in content:
 				item['status'] = 'blocked'
@@ -116,16 +116,12 @@ signal.signal(signal.SIGQUIT, signal_handler)
 
 def parse_registry(filename):
 	result = []
-	
+
 	tree = etree.parse(filename)	
 	records = tree.xpath('//content')
 	for item in records:
 		try:
-			try:
-				block_type = item.attrib['blockType']
-			except:
-				block_type = 'default'
-
+			block_type = item.get('blockType', default = 'default')
 			decision = item.xpath('decision')[0]
 			urls = item.xpath('url')
 			ips = item.xpath('ip')
