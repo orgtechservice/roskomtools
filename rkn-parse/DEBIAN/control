@@ -2,7 +2,7 @@ Package: rkn-parse
 Version: 1.0-1
 Section: misc
 Architecture: all
-Depends: bash, python3, python3-lxml
+Depends: bash, python3, python3-lxml, rkn-load
 Maintainer: Ilya Averkov <ilya@mkpnet.ru>
 Priority: extra
 Description: roskom registry parser

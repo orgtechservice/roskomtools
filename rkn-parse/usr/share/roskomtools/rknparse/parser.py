@@ -43,3 +43,23 @@ def parse_registry(filename, database):
 
 	cursor.close()
 	database.commit()
+
+def load_urls(database):
+	result = []
+	cursor = database.cursor()
+	cursor.execute("SELECT url_text FROM urls")
+	rows = cursor.fetchall()
+	cursor.close()
+
+	for row in rows:
+		result.append({'url': row[0], 'status': 'unknown', 'reply': None, 'code': 0})
+
+	cursor = database.cursor()
+	cursor.execute("SELECT domain_text FROM domains")
+	rows = cursor.fetchall()
+	cursor.close()
+
+	for row in rows:
+		result.append({'url': "http://%s/" % row[0], 'status': 'unknown', 'reply': None, 'code': 0})
+	
+	return result
