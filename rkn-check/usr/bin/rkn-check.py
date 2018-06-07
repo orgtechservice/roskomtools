@@ -2,15 +2,21 @@
 # -*- coding: utf-8 -*-
 
 # Импорты Python
-import time, sys, threading, signal, ipaddress, gc
+import time, sys, threading, signal, ipaddress, gc, configparser, sqlite3
 
 # Сторонние пакеты
 import requests
-from lxml import etree
 
 # Наш конфигурационный файл
-sys.path.append('/etc/roskom')
-import config
+config = configparser.ConfigParser()
+config.read('/etc/roskom/check.ini')
+
+# База данных
+db = sqlite3.connect(config['check']['database'])
+
+# Общие модули
+sys.path.append('/usr/share/roskomtools')
+from rknparse import parser
 
 # Время начала работы скрипта
 execution_start = time.time()
@@ -23,6 +29,9 @@ out_mutex = threading.Lock()
 request_headers = {
 	'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Ubuntu Chromium/49.0.2623.108 Chrome/49.0.2623.108 Safari/537.36',
 }
+
+# Текст для поиска в ответе
+search_text = config['check']['search_text'].encode('utf-8')
 
 # Счётчик обработанных ссылок (для отображения прогресса)
 counter = 0
@@ -53,14 +62,14 @@ class Worker(threading.Thread):
 		print(u"(%d of %d) [%s] %s" % (counter, self.total_count, item['status'], item['url']))
 
 	def process_item(self, item):
-		global request_headers
+		global request_headers, search_text
 		item['checked'] = int(time.time())
 
 		try:
 			response = requests.get(item['url'], timeout = self.timeout, stream = True, headers = request_headers)
 			content = response.raw.read(10000, decode_content = True)
 
-			if config.SEARCH_TEXT in content:
+			if search_text in content:
 				item['status'] = 'blocked'
 			else:
 				try:
@@ -114,50 +123,23 @@ signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
 signal.signal(signal.SIGQUIT, signal_handler)
 
-def parse_registry(filename):
-	result = []
-
-	tree = etree.parse(filename)	
-	records = tree.xpath('//content')
-	for item in records:
-		try:
-			block_type = item.get('blockType', default = 'default')
-			decision = item.xpath('decision')[0]
-			urls = item.xpath('url')
-			ips = item.xpath('ip')
-			domains = item.xpath('domain')
-			ip_subnets = item.xpath('ipSubnet')
-
-			if block_type == 'default':
-				result += [{'url': url.text, 'status': 'unknown', 'reply': None, 'code': 0} for url in urls]
-			elif block_type == 'ip':
-				pass # NOT IMPLEMENTED
-			elif block_type == 'domain':
-				result += [{'url': "http://%s/" % domain.text, 'status': 'unknown', 'reply': None, 'code': 0, 'checked': 0} for domain in domains]
-			else:
-				pass # ???
-		except:
-			continue
-
-	return result
-
-print("Starting using %d threads" % (config.THREADS,))
+print("Starting using %d threads" % (int(config['check']['threads']),))
 
 try:
-	print("Loading dump.xml...")
-	in_data = parse_registry('dump.xml')
+	print("Loading data...")
+	in_data = parser.load_urls(db)
 	out_data = []
 except:
-	print("dump.xml not found or corrupted. Run rkn-load.py first.")
+	print("Failed to load data. Run rkn-load.py to load the registry and rkn-parse.py to parse it.")
 	exit(-1)
 
 print("Loading succeeded, starting check")
 
 # Инициализируем наши рабочие потоки
 threads = {}
-for i in range(config.THREADS):
+for i in range(int(config['check']['threads'])):
 	threads[i] = Worker(i, in_data, out_data, True)
-	threads[i].set_timeout(config.HTTP_TIMEOUT)
+	threads[i].set_timeout(int(config['check']['http_timeout']))
 	threads[i].setDaemon(True)
 
 # Разветвляемся
