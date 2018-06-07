@@ -1,0 +1,8 @@
+Package: rkn-fakezonegen
+Version: 1.0-1
+Section: misc
+Architecture: all
+Depends: bash, php-cli, php-mysql
+Maintainer: Ilya Averkov <ilya@mkpnet.ru>
+Priority: extra
+Description: roskom fake DNS zone generator
