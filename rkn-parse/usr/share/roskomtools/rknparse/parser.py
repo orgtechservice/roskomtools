@@ -26,8 +26,8 @@ def parse_registry(filename, database):
 			if block_type == 'default':
 				for url in item.xpath('url'):
 					cursor.execute("INSERT INTO urls (url_content_id, url_text) VALUES (?, ?)", (content_id, url.text))
-				for domain in item.xpath('domain'):
-					cursor.execute("INSERT INTO domains (domain_content_id, domain_text) VALUES (?, ?)", (content_id, domain.text))
+				#for domain in item.xpath('domain'):
+				#	cursor.execute("INSERT INTO domains (domain_content_id, domain_text) VALUES (?, ?)", (content_id, domain.text))
 			elif block_type == 'ip':
 				for ip in item.xpath('ip'):
 					cursor.execute("INSERT INTO ips (ip_content_id, ip_text) VALUES (?, ?)", (content_id, ip.text))

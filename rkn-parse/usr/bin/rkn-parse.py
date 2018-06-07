@@ -25,3 +25,5 @@ cursor.close()
 db.commit()
 
 parser.parse_registry('dump.xml', db)
+
+print("Finished")
