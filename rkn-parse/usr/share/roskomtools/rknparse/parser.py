@@ -36,6 +36,9 @@ def parse_registry(filename, database):
 			elif block_type == 'domain':
 				for domain in item.xpath('domain'):
 					cursor.execute("INSERT INTO domains (domain_content_id, domain_text) VALUES (?, ?)", (content_id, domain.text))
+			elif block_type == 'domain-mask':
+				for domain in item.xpath('domain'):
+					cursor.execute("INSERT INTO domain_masks (mask_content_id, mask_text) VALUES (?, ?)", (content_id, domain.text))
 			else:
 				pass # ???
 		except:
