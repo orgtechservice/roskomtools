@@ -17,12 +17,18 @@ db = sqlite3.connect(config['parse']['database'])
 
 cursor = db.cursor()
 cursor.execute("CREATE TABLE IF NOT EXISTS content (content_id INT, content_block_type TEXT, PRIMARY KEY (content_id))")
-cursor.execute("CREATE TABLE IF NOT EXISTS domains (domain_content_id INT, domain_text TEXT, PRIMARY KEY (domain_content_id))")
-cursor.execute("CREATE TABLE IF NOT EXISTS urls (url_content_id INT, url_text TEXT, PRIMARY KEY (url_content_id))")
-cursor.execute("CREATE TABLE IF NOT EXISTS ips (ip_content_id INT, ip_text TEXT, PRIMARY KEY (ip_content_id))")
-cursor.execute("CREATE TABLE IF NOT EXISTS subnets (subnet_content_id INT, subnet_text TEXT, PRIMARY KEY (subnet_content_id))")
+cursor.execute("CREATE TABLE IF NOT EXISTS domains (domain_content_id INT, domain_text TEXT)")
+cursor.execute("CREATE TABLE IF NOT EXISTS urls (url_content_id INT, url_text TEXT)")
+cursor.execute("CREATE TABLE IF NOT EXISTS ips (ip_content_id INT, ip_text TEXT)")
+cursor.execute("CREATE TABLE IF NOT EXISTS subnets (subnet_content_id INT, subnet_text TEXT)")
+cursor.execute("CREATE INDEX IF NOT EXISTS domain_content_id_idx ON domains (domain_content_id)")
+cursor.execute("CREATE INDEX IF NOT EXISTS url_content_id_idx ON urls (url_content_id)")
+cursor.execute("CREATE INDEX IF NOT EXISTS ip_content_id_idx ON ips (ip_content_id)")
+cursor.execute("CREATE INDEX IF NOT EXISTS subnet_content_id_idx ON subnets (subnet_content_id)")
 cursor.close()
 db.commit()
+
+print("Parsing the registry...")
 
 parser.parse_registry('dump.xml', db)
 
