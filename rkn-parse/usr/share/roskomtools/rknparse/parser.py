@@ -11,6 +11,7 @@ def parse_registry(filename, database):
 	cursor.execute("DELETE FROM ips")
 	cursor.execute("DELETE FROM subnets")
 	cursor.execute("DELETE FROM content")
+	cursor.execute("DELETE FROM domain_masks")
 
 	# Заполним их заново
 	tree = etree.parse(filename)	
