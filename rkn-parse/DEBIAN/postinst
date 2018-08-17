@@ -1,4 +1,5 @@
 #!/bin/bash
 
+mkdir -p /var/lib/roskomtools
 chmod 777 /var/lib/roskomtools
 rm -f /var/lib/roskomtools/registry.db
