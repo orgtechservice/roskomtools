@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Python
-import sys, base64, signal, time, zipfile
+import sys, base64, signal, time, zipfile, os
 
 # SUDS
 from suds.client import Client
@@ -48,6 +48,11 @@ class Command(object):
 	service = None
 	code = None
 	api = None
+	console = True
+
+	def print_message(self, message):
+		if self.console:
+			print(message)
 
 	def handle_signal(self, signum, frame):
 		print("Exitting on user's request")
@@ -57,8 +62,8 @@ class Command(object):
 		print(str(e))
 		exit(-1)
 
-	def handle(self):
-		# Set the signal handler and a 5-second alarm
+	def handle(self, console = True):
+		self.console = console
 		signal.signal(signal.SIGTERM, self.handle_signal)
 		signal.signal(signal.SIGQUIT, self.handle_signal)
 		signal.signal(signal.SIGINT, self.handle_signal)
@@ -66,14 +71,14 @@ class Command(object):
 		url = 'http://vigruzki.rkn.gov.ru/services/OperatorRequest/?wsdl'
 
 		try:
-			print("Connecting to the API")
+			self.print_message("Connecting to the API")
 			self.api = RoskomAPI(url)
-			print("API connection succeeded")
+			self.print_message("API connection succeeded")
 		except Exception as e:
 			self.handle_exception(e)
 
 		if self.api.request_xml == "" or self.api.request_xml_sign == "":
-			print("No data in request.xml or in request.xml.sign")
+			self.print_message("No data in request.xml or in request.xml.sign")
 			exit(-1)
 
 		# Фактическая и записанная даты, можно сравнивать их и в зависимости от этого делать выгрузку, но мы сделаем безусловную
@@ -82,24 +87,24 @@ class Command(object):
 			our_last_dump = 0
 
 			if dump_date > our_last_dump:
-				print("New registry dump available, proceeding")
+				self.print_message("New registry dump available, proceeding")
 			else:
-				print("No changes in dump.xml, but forcing the process")
+				self.print_message("No changes in dump.xml, but forcing the process")
 		except Exception as e:
 			self.handle_exception(e)
 
 		try:
-			print("Sending request")
+			self.print_message("Sending request")
 			response = self.api.sendRequest()
-			print("Request sent")
+			self.print_message("Request sent")
 			self.code = response['code'].decode('utf-8')
 		except Exception as e:
 			self.handle_exception(e)
 	
 		while True:
-			print("Waiting 30 seconds")
+			self.print_message("Waiting 30 seconds")
 			time.sleep(30)
-			print("Checking result")
+			self.print_message("Checking result")
 			result = None
 			try:
 				result = self.api.getResult(self.code)
@@ -108,36 +113,39 @@ class Command(object):
 
 			if (result is not None) and ('result' in result) and result['result']:
 				try:
-					print("Got proper result, writing zip file")
+					self.print_message("Got proper result, writing zip file")
 					filename = "registry.zip"
 					zip_archive = result['registerZipArchive']
 					data = base64.b64decode(zip_archive)
 					with open(filename, 'wb') as file:
 						data = base64.b64decode(zip_archive)
 						file.write(data)
-					print("ZIP file saved")
+					self.print_message("ZIP file saved")
 
 					with zipfile.ZipFile(filename, 'r') as file:
-						file.extractall("")
+						if self.console:
+							file.extractall()
+						else:
+							file.extractall('/var/lib/roskomtools')
 					
-					print("ZIP file extracted")
-					print("Job done!")
+					self.print_message("ZIP file extracted")
+					self.print_message("Job done!")
 					break
 				except Exception as e:
 					self.handle_exception(e)
 			else:
 				try:
 					if result['resultComment'].decode('utf-8') == 'запрос обрабатывается':
-						print("Still not ready")
+						self.print_message("Still not ready")
 						continue
 					else:
 						error = result['resultComment'].decode('utf-8')
-						print("getRclientesult failed with code %d: %s" % (result['resultCode'], error))
+						self.print_message("getRclientesult failed with code %d: %s" % (result['resultCode'], error))
 						exit(-1)
 				except Exception as e:
 					self.handle_exception(e)
 
 if __name__ == '__main__':
 	command = Command()
-	command.handle()
-
+	console = os.isatty(sys.stdin.fileno())
+	command.handle(console)
