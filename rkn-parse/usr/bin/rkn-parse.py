@@ -16,7 +16,7 @@ from rknparse import parser
 db = sqlite3.connect(config['parse']['database'])
 
 cursor = db.cursor()
-cursor.execute("CREATE TABLE IF NOT EXISTS content (content_id INT, content_block_type TEXT, PRIMARY KEY (content_id))")
+cursor.execute("CREATE TABLE IF NOT EXISTS content (content_id INT, content_block_type TEXT, content_include_time TEXT, content_urgency_type INT, content_entry_type INT, content_hash TEXT, content_ts INT, content_decision_date TEXT, content_decision_number TEXT, content_decision_org TEXT, PRIMARY KEY (content_id))")
 cursor.execute("CREATE TABLE IF NOT EXISTS domains (domain_content_id INT, domain_text TEXT)")
 cursor.execute("CREATE TABLE IF NOT EXISTS domain_masks (mask_content_id INT, mask_text TEXT)")
 cursor.execute("CREATE TABLE IF NOT EXISTS urls (url_content_id INT, url_text TEXT)")
