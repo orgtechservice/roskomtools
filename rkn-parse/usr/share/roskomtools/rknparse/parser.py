@@ -41,20 +41,20 @@ def parse_registry(filename, database):
 
 			if content_block_type == 'default':
 				for url in item.xpath('url'):
-					cursor.execute("INSERT INTO urls (url_content_id, url_text) VALUES (?, ?)", (content_id, url.text))
+					cursor.execute("INSERT INTO urls (url_content_id, url_text, url_ts) VALUES (?, ?, ?)", (content_id, url.text, url.get('ts', default = 0)))
 				#for domain in item.xpath('domain'):
 				#	cursor.execute("INSERT INTO domains (domain_content_id, domain_text) VALUES (?, ?)", (content_id, domain.text))
 			elif content_block_type == 'ip':
 				for ip in item.xpath('ip'):
-					cursor.execute("INSERT INTO ips (ip_content_id, ip_text) VALUES (?, ?)", (content_id, ip.text))
+					cursor.execute("INSERT INTO ips (ip_content_id, ip_text, ip_ts) VALUES (?, ?, ?)", (content_id, ip.text, ip.get('ts', 0)))
 				for subnet in item.xpath('ipSubnet'):
-					cursor.execute("INSERT INTO subnets (subnet_content_id, subnet_text) VALUES (?, ?)", (content_id, subnet.text))
+					cursor.execute("INSERT INTO subnets (subnet_content_id, subnet_text, subnet_ts) VALUES (?, ?, ?)", (content_id, subnet.text, subnet.get('ts', default = 0)))
 			elif content_block_type == 'domain':
 				for domain in item.xpath('domain'):
-					cursor.execute("INSERT INTO domains (domain_content_id, domain_text) VALUES (?, ?)", (content_id, domain.text))
+					cursor.execute("INSERT INTO domains (domain_content_id, domain_text, domain_ts) VALUES (?, ?, ?)", (content_id, domain.text, domain.get('ts', default = 0)))
 			elif content_block_type == 'domain-mask':
 				for domain in item.xpath('domain'):
-					cursor.execute("INSERT INTO domain_masks (mask_content_id, mask_text) VALUES (?, ?)", (content_id, domain.text))
+					cursor.execute("INSERT INTO domain_masks (mask_content_id, mask_text, mask_ts) VALUES (?, ?, ?)", (content_id, domain.text, domain.get('ts', default = 0)))
 			else:
 				pass # ???
 		except:
