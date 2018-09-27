@@ -1,0 +1,8 @@
+Package: rkn-cronjobs
+Version: 1.1-1
+Section: misc
+Architecture: all
+Depends: rkn-load, rkn-parse, rkn-check
+Maintainer: Ilya Averkov <ilya.averkov@gmail.com>
+Priority: extra
+Description: block test tool

@@ -1,0 +1,3 @@
+#!/bin/bash
+
+ln -s /usr/bin/rkn-load.py /etc/cron.hourly/rkn-load.py

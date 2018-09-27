@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 # Импорты Python
-import sys, sqlite3, configparser
+import sys, sqlite3, configparser, os, errno
+
 
 # Наш конфигурационный файл
 config = configparser.ConfigParser()
@@ -10,7 +11,7 @@ config.read('/etc/roskom/parse.ini')
 
 # Общие модули
 sys.path.append('/usr/share/roskomtools')
-from rknparse import parser
+import rknparser
 
 # База данных
 db = sqlite3.connect(config['parse']['database'])
@@ -32,6 +33,17 @@ db.commit()
 
 print("Parsing the registry...")
 
-parser.parse_registry('dump.xml', db)
+def try_process(filename, db):
+	try:
+		rknparser.parse_registry(filename, db)
+	except OSError as e:
+		print("dump.xml is not accessible")
+	except:
+		print("Parsing failed")
+	else:
+		print("Finished")
 
-print("Finished")
+if os.isatty(sys.stdin.fileno()):
+	try_process('dump.xml', db)
+else:
+	try_process('/tmp/dump.xml', db)

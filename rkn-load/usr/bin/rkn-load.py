@@ -126,7 +126,7 @@ class Command(object):
 						if self.console:
 							file.extractall()
 						else:
-							file.extractall('/var/lib/roskomtools')
+							file.extractall('/tmp')
 					
 					self.print_message("ZIP file extracted")
 					self.print_message("Job done!")

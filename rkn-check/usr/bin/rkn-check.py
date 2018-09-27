@@ -16,7 +16,7 @@ db = sqlite3.connect(config['check']['database'])
 
 # Общие модули
 sys.path.append('/usr/share/roskomtools')
-from rknparse import parser
+import rknparser
 
 # Время начала работы скрипта
 execution_start = time.time()
@@ -127,7 +127,7 @@ print("Starting using %d threads" % (int(config['check']['threads']),))
 
 try:
 	print("Loading data...")
-	in_data = parser.load_urls(db)
+	in_data = rknparser.load_urls(db)
 	out_data = []
 except:
 	print("Failed to load data. Run rkn-load.py to load the registry and rkn-parse.py to parse it.")
