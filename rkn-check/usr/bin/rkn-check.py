@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Импорты Python
-import time, sys, threading, signal, ipaddress, gc, configparser, sqlite3
+import time, sys, threading, signal, ipaddress, gc, configparser, sqlite3, os
 
 # Сторонние пакеты
 import requests
@@ -13,6 +13,13 @@ config.read('/etc/roskom/check.ini')
 
 # База данных
 db = sqlite3.connect(config['check']['database'])
+
+# Создадим таблицы результатов проверок
+cursor = db.cursor()
+cursor.execute("CREATE TABLE IF NOT EXISTS checks (check_id INTEGER PRIMARY KEY AUTOINCREMENT, check_when INTEGER, check_total INTEGER, check_available INTEGER, check_minutes INTEGER, check_seconds INTEGER, check_maxrss INTEGER)")
+cursor.execute("CREATE TABLE IF NOT EXISTS available_links (link_check_id INTEGER, link_when INTEGER, link_url TEXT)")
+cursor.close()
+db.commit()
 
 # Общие модули
 sys.path.append('/usr/share/roskomtools')
@@ -166,8 +173,20 @@ execution_time = execution_end - execution_start
 execution_minutes = int(execution_time / 60)
 execution_seconds = (execution_time - (execution_minutes * 60))
 
-with open('result.txt', 'w') as f:
-	for link in available:
-		f.write("%s <%d>\n" % (link['url'], link['checked']))
+# Сохраним результат в БД
+cursor = db.cursor()
+data = (timestamp, total_count, available_count, execution_minutes, execution_seconds, stat.ru_maxrss)
+cursor.execute("INSERT INTO checks (check_when, check_total, check_available, check_minutes, check_seconds, check_maxrss) VALUES (?, ?, ?, ?, ?, ?)", data)
+check_id = cursor.lastrowid
+for link in available:
+	data = (check_id, link['checked'], link['url'])
+	cursor.execute("INSERT INTO available_links (link_check_id, link_when, link_url) VALUES (?, ?, ?)", data)
+cursor.close()
+db.commit()
 
-print("---\nCheck finished in %dm:%.2fs using %d kb RES\nAvailable: %d, not available: %d" % (execution_minutes, execution_seconds, stat.ru_maxrss, available_count, total_count - available_count))
+if os.isatty(sys.stdin.fileno()):
+	with open('result.txt', 'w') as f:
+		for link in available:
+			f.write("%s <%d>\n" % (link['url'], link['checked']))
+
+	print("---\nCheck finished in %dm:%.2fs using %d kb RES\nAvailable: %d, not available: %d" % (execution_minutes, execution_seconds, stat.ru_maxrss, available_count, total_count - available_count))
