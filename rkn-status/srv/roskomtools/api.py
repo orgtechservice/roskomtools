@@ -2,9 +2,9 @@
 
 from bottle import Bottle, run
 
-app = Bottle()
+application = Bottle()
 
-@app.route('/')
+@application.route('/')
 def home_page():
     return "Hello World!"
 

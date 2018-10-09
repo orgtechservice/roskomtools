@@ -1,0 +1,4 @@
+#!/bin/bash
+
+systemctl enable uwsgi-emperor
+systemctl restart uwsgi-emperor
