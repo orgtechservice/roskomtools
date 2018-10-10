@@ -126,10 +126,15 @@ class Command(object):
 		cursor.execute("UPDATE loads SET load_code = ?, load_state = 2 WHERE load_id = ?", data)
 		cursor.close()
 		db.commit()
+
+		try:
+			delay = int(config['load']['delay'])
+		except:
+			delay = 30
 	
 		while True:
-			self.print_message("Waiting 30 seconds")
-			time.sleep(30)
+			self.print_message("Waiting %d seconds" % (delay,))
+			time.sleep(delay)
 			self.print_message("Checking result")
 			result = None
 			try:
