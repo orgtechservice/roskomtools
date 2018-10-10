@@ -2,7 +2,7 @@ Package: rkn-status
 Version: 1.0-1
 Section: misc
 Architecture: all
-Depends: rkn-load, rkn-parse, rkn-check, uwsgi-plugin-python3, uwsgi-emperor, python3-bottle
+Depends: rkn-load, rkn-parse, rkn-check, rkn-common, uwsgi-plugin-python3, uwsgi-emperor, python3-bottle
 Maintainer: Ilya Averkov <ilya@mkpnet.ru>
 Priority: extra
 Description: roskom status API

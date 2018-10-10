@@ -2,7 +2,7 @@ Package: rkn-load
 Version: 1.0-1
 Section: misc
 Architecture: all
-Depends: bash, python3-suds
+Depends: bash, python3-suds, rkn-common
 Maintainer: Margarita Kosobokova <zolotko92@gmail.net>
 Priority: extra
 Description: roskom registry load
