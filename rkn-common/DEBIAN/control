@@ -1,0 +1,8 @@
+Package: rkn-common
+Version: 1.0-1
+Section: misc
+Architecture: all
+Depends: python3
+Maintainer: Ilya Averkov <ilya.averkov@gmail.com>
+Priority: extra
+Description: roskomtools common files
