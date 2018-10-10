@@ -9,10 +9,10 @@ import requests
 
 # Наш конфигурационный файл
 config = configparser.ConfigParser()
-config.read('/etc/roskom/check.ini')
+config.read('/etc/roskom/tools.ini')
 
 # База данных
-db = sqlite3.connect(config['check']['database'])
+db = sqlite3.connect(config['roskomtools']['database'])
 
 # Создадим таблицы результатов проверок
 cursor = db.cursor()

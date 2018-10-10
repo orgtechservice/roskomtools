@@ -2,11 +2,23 @@
 # -*- coding: utf-8 -*-
 
 # Python
-import sys, base64, signal, time, zipfile, os
+import sys, base64, signal, time, zipfile, os, configparser, sqlite3
 
 # SUDS
 from suds.client import Client
 from suds.sax.text import Text
+
+# Наш конфигурационный файл
+config = configparser.ConfigParser()
+config.read('/etc/roskom/tools.ini')
+
+# База данных
+db = sqlite3.connect(config['roskomtools']['database'])
+
+cursor = db.cursor()
+cursor.execute("CREATE TABLE IF NOT EXISTS loads (load_id INTEGER PRIMARY KEY AUTOINCREMENT, load_when INTEGER, load_code TEXT, load_state INTEGER)")
+cursor.close()
+db.commit()
 
 def file_get_contents(filename):
 	try:
@@ -62,7 +74,7 @@ class Command(object):
 		print(str(e))
 		exit(-1)
 
-	def handle(self, console = True):
+	def handle(self, db, console = True):
 		self.console = console
 		signal.signal(signal.SIGTERM, self.handle_signal)
 		signal.signal(signal.SIGQUIT, self.handle_signal)
@@ -93,6 +105,14 @@ class Command(object):
 		except Exception as e:
 			self.handle_exception(e)
 
+		cursor = db.cursor()
+		when = int(time.time())
+		data = (when, '', 1)
+		cursor.execute("INSERT INTO loads (load_when, load_code, load_state) VALUES (?, ?, ?)", data)
+		load_id = cursor.lastrowid
+		cursor.close()
+		db.commit()
+
 		try:
 			self.print_message("Sending request")
 			response = self.api.sendRequest()
@@ -100,6 +120,12 @@ class Command(object):
 			self.code = response['code'].decode('utf-8')
 		except Exception as e:
 			self.handle_exception(e)
+
+		cursor = db.cursor()
+		data = (self.code, load_id)
+		cursor.execute("UPDATE loads SET load_code = ?, load_state = 2 WHERE load_id = ?", data)
+		cursor.close()
+		db.commit()
 	
 		while True:
 			self.print_message("Waiting 30 seconds")
@@ -128,6 +154,11 @@ class Command(object):
 						else:
 							file.extractall('/var/lib/roskomtools')
 					
+					cursor = db.cursor()
+					cursor.execute("UPDATE loads SET load_state = 0 WHERE load_id = ?", (load_id,))
+					cursor.close()
+					db.commit()
+
 					self.print_message("ZIP file extracted")
 					self.print_message("Job done!")
 					break
@@ -148,4 +179,4 @@ class Command(object):
 if __name__ == '__main__':
 	command = Command()
 	console = os.isatty(sys.stdin.fileno())
-	command.handle(console)
+	command.handle(db, console)
