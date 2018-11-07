@@ -10,6 +10,8 @@ def parse_registry(filename, database):
 	cursor.execute("DELETE FROM domains")
 	cursor.execute("DELETE FROM ips")
 	cursor.execute("DELETE FROM subnets")
+	cursor.execute("DELETE FROM ipsv6")
+	cursor.execute("DELETE FROM subnetsv6")
 	cursor.execute("DELETE FROM content")
 	cursor.execute("DELETE FROM domain_masks")
 
@@ -49,6 +51,10 @@ def parse_registry(filename, database):
 					cursor.execute("INSERT INTO ips (ip_content_id, ip_text, ip_ts) VALUES (?, ?, ?)", (content_id, ip.text, ip.get('ts', 0)))
 				for subnet in item.xpath('ipSubnet'):
 					cursor.execute("INSERT INTO subnets (subnet_content_id, subnet_text, subnet_ts) VALUES (?, ?, ?)", (content_id, subnet.text, subnet.get('ts', default = 0)))
+				for ip in item.xpath('ipv6'):
+					cursor.execute("INSERT INTO ipsv6 (ip_content_id, ip_text, ip_ts) VALUES (?, ?, ?)", (content_id, ip.text, ip.get('ts', 0)))
+				for subnet in item.xpath('ipv6Subnet'):
+					cursor.execute("INSERT INTO subnetsv6 (subnet_content_id, subnet_text, subnet_ts) VALUES (?, ?, ?)", (content_id, subnet.text, subnet.get('ts', default = 0)))
 			elif content_block_type == 'domain':
 				for domain in item.xpath('domain'):
 					cursor.execute("INSERT INTO domains (domain_content_id, domain_text, domain_ts) VALUES (?, ?, ?)", (content_id, domain.text, domain.get('ts', default = 0)))

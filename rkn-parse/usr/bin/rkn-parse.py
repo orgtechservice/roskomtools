@@ -7,14 +7,14 @@ import sys, sqlite3, configparser, os, errno
 
 # Наш конфигурационный файл
 config = configparser.ConfigParser()
-config.read('/etc/roskom/parse.ini')
+config.read('/etc/roskom/tools.ini')
 
 # Общие модули
 sys.path.append('/usr/share/roskomtools')
 import rknparser
 
 # База данных
-db = sqlite3.connect(config['parse']['database'])
+db = sqlite3.connect(config['roskomtools']['database'])
 
 cursor = db.cursor()
 cursor.execute("CREATE TABLE IF NOT EXISTS content (content_id INT, content_block_type TEXT, content_include_time TEXT, content_urgency_type INT, content_entry_type INT, content_hash TEXT, content_ts INT, content_decision_date TEXT, content_decision_number TEXT, content_decision_org TEXT, PRIMARY KEY (content_id))")
@@ -23,6 +23,8 @@ cursor.execute("CREATE TABLE IF NOT EXISTS domain_masks (mask_content_id INT, ma
 cursor.execute("CREATE TABLE IF NOT EXISTS urls (url_content_id INT, url_text TEXT, url_ts INT)")
 cursor.execute("CREATE TABLE IF NOT EXISTS ips (ip_content_id INT, ip_text TEXT, ip_ts INT)")
 cursor.execute("CREATE TABLE IF NOT EXISTS subnets (subnet_content_id INT, subnet_text TEXT, subnet_ts INT)")
+cursor.execute("CREATE TABLE IF NOT EXISTS ipsv6 (ip_content_id INT, ip_text TEXT, ip_ts INT)")
+cursor.execute("CREATE TABLE IF NOT EXISTS subnetsv6 (subnet_content_id INT, subnet_text TEXT, subnet_ts INT)")
 cursor.execute("CREATE INDEX IF NOT EXISTS domain_content_id_idx ON domains (domain_content_id)")
 cursor.execute("CREATE INDEX IF NOT EXISTS mask_content_id_idx ON domain_masks (mask_content_id)")
 cursor.execute("CREATE INDEX IF NOT EXISTS url_content_id_idx ON urls (url_content_id)")
