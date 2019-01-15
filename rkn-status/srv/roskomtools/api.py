@@ -60,5 +60,25 @@ def last_load_page():
 		}
 		return json.dumps(reply)
 
+@application.route('/last-successful-load')
+def last_successful_load_page():
+	response.content_type = 'text/plain'
+	cursor = db.cursor()
+	try:
+		statement = cursor.execute("SELECT load_id, load_when, load_code FROM loads WHERE load_state = 0 ORDER BY load_when DESC LIMIT 1")
+	except:
+		return '{}'
+	result = statement.fetchall()
+	if len(result) == 0:
+		return '{}'
+	else:
+		load = result[0]
+		reply = {
+			'check_id': int(load[0]),
+			'when': int(load[1]),
+			'code': load[2],
+		}
+		return json.dumps(reply)
+
 if __name__ == '__main__':
 	run(app, host = 'localhost', port = 8080)
