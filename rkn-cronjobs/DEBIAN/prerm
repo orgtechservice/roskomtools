@@ -1,3 +1,4 @@
 #!/bin/bash
 
-rm /etc/cron.hourly/rkn-load
+rm -f /etc/cron.hourly/010rkn-load
+rm -f /etc/cron.hourly/020rkn-parse
