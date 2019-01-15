@@ -44,22 +44,19 @@ def last_load_page():
 	response.content_type = 'text/plain'
 	cursor = db.cursor()
 	try:
-		statement = cursor.execute("SELECT load_id, load_when, load_state, load_code FROM loads ORDER BY check_when DESC LIMIT 1")
+		statement = cursor.execute("SELECT load_id, load_when, load_state, load_code FROM loads ORDER BY load_when DESC LIMIT 1")
 	except:
-		return '{}'	
+		return '{}'
 	result = statement.fetchall()
 	if len(result) == 0:
 		return '{}'
 	else:
-		check = result[0]
+		load = result[0]
 		reply = {
-			'check_id': int(check[0]),
-			'when': int(check[1]),
-			'total_links': int(check[2]),
-			'available_links': int(check[3]),
-			'duration_minutes': int(check[4]),
-			'duration_seconds': int(check[5]),
-			'maxrss': int(check[6]),
+			'check_id': int(load[0]),
+			'when': int(load[1]),
+			'state': int(load[2]),
+			'code': load[3],
 		}
 		return json.dumps(reply)
 
