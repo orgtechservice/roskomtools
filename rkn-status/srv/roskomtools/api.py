@@ -1,10 +1,10 @@
 #!/usr/bin/python3
 
 # Bottle
-from bottle import Bottle, run, response
+from bottle import Bottle, run, response, static_file, request
 
 # Импорты Python
-import sys, sqlite3, configparser, os, errno, json
+import sys, sqlite3, configparser, os, errno, json, ipaddress
 
 # Наш конфигурационный файл
 config = configparser.ConfigParser()
@@ -79,6 +79,19 @@ def last_successful_load_page():
 			'code': load[2],
 		}
 		return json.dumps(reply)
+
+# рекомендуется переопределить в nginx или хотя бы в uWSGI
+@application.route('/dump.xml')
+def dump_xml_page():
+	for i in config['api']['allow'].split(','):
+		allowed_ip = ipaddress.ip_address(i)
+		if allowed_ip == ipaddress.ip_address(request.environ.get('REMOTE_ADDR')):
+			return static_file('dump.xml', root = '/var/lib/roskomtools', mimetype = 'text/xml')
+	
+	response.status = 403
+	response.content_type = 'text/plain'
+	return json.dumps({'error': 403})
+
 
 if __name__ == '__main__':
 	run(app, host = 'localhost', port = 8080)
