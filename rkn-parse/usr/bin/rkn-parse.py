@@ -38,6 +38,7 @@ print("Parsing the registry...")
 def try_process(filename, db):
 	try:
 		rknparser.parse_registry(filename, db)
+		rknparser.resolve_all(filename, db)
 	except OSError as e:
 		print("dump.xml is not accessible")
 	except:

@@ -2,6 +2,8 @@
 # Сторонние пакеты
 from lxml import etree
 
+re_link = r'(https?)://(([^/]*)\.([^/:\.]*))(:(\d+))?'
+
 def parse_registry(filename, database):
 	cursor = database.cursor()
 
@@ -68,6 +70,20 @@ def parse_registry(filename, database):
 
 	cursor.close()
 	database.commit()
+
+"""
+def using_wrong_port(groups):
+	return (groups[5] is not None) and (int(groups[5]) in [80, 8080])
+
+def using_wrong_port(link):
+	global re_link
+	m = re_link.fullmatch(link):
+	if m is not None:
+		groups = m.groups()
+		return (groups[5] is not None) and (int(groups[5]) in [80, 8080])
+	else:
+		return False
+"""
 
 def load_urls(database):
 	result = []

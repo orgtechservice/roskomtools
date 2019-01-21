@@ -92,6 +92,37 @@ def dump_xml_page():
 	response.content_type = 'text/plain'
 	return json.dumps({'error': 403})
 
+@application.route('/blocked-ips')
+def blocked_ips_page():
+	response.content_type = 'text/plain'
+	cursor = db.cursor()
+
+	pure_ips = set()
+	pure_ipsv6 = set()
+	subnets = set()
+	subnetsv6 = set()
+
+	# Quering IPs from registry
+	cursor.execute("SELECT ip_text FROM ips WHERE ip_content_id IN (SELECT content_id FROM content WHERE content_block_type = 'ip')")
+	for row in cursor.fetchall():
+		pure_ips.add(row[0])
+
+	# Quering IPv6s from registry
+	cursor.execute("SELECT ip_text FROM ipsv6 WHERE ip_content_id IN (SELECT content_id FROM content WHERE content_block_type = 'ip')")
+	for row in cursor.fetchall():
+		pure_ipsv6.add(row[0])
+
+	# Quering IPv4 subnets from registry
+	cursor.execute("SELECT subnet_text FROM subnets")
+	for row in cursor.fetchall():
+		subnets.add(row[0])
+
+	# Quering IPv6 subnets from registry
+	cursor.execute("SELECT subnet_text FROM subnetsv6")
+	for row in cursor.fetchall():
+		subnetsv6.add(row[0])
+
+	return json.dumps({'ips': list(pure_ips), 'ipsv6': list(pure_ipsv6), 'subnets': list(subnets), 'subnetsv6': list(subnetsv6)})
 
 if __name__ == '__main__':
 	run(app, host = 'localhost', port = 8080)
