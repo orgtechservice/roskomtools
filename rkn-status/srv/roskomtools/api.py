@@ -4,7 +4,8 @@
 from bottle import Bottle, run, response, static_file, request
 
 # Импорты Python
-import sys, sqlite3, configparser, os, errno, json, ipaddress
+import sys, sqlite3, configparser, os, errno, json, ipaddress, re
+from urllib.parse import urlparse
 
 # Наш конфигурационный файл
 config = configparser.ConfigParser()
@@ -12,6 +13,7 @@ config.read('/etc/roskom/tools.ini')
 
 # База данных
 db = sqlite3.connect(config['roskomtools']['database'])
+db.create_function('regexp', 2, lambda x, y: 1 if re.search(x, y) else 0)
 
 application = Bottle()
 
@@ -101,6 +103,7 @@ def blocked_ips_page():
 	pure_ipsv6 = set()
 	subnets = set()
 	subnetsv6 = set()
+	wpdomains = set()
 
 	# Quering IPs from registry
 	cursor.execute("SELECT ip_text FROM ips WHERE ip_content_id IN (SELECT content_id FROM content WHERE content_block_type = 'ip')")
@@ -122,7 +125,16 @@ def blocked_ips_page():
 	for row in cursor.fetchall():
 		subnetsv6.add(row[0])
 
-	return json.dumps({'ips': list(pure_ips), 'ipsv6': list(pure_ipsv6), 'subnets': list(subnets), 'subnetsv6': list(subnetsv6)})
+	# Quering wrong-port domains
+	cursor.execute("SELECT url_text FROM urls WHERE url_text REGEXP '^https?://[^:/]+:[0-9]+'")
+	for row in cursor.fetchall():
+		try:
+			info = urlparse(row[0])
+			wpdomains.add(info.hostname)
+		except:
+			continue
+
+	return json.dumps({'ips': list(pure_ips), 'ipsv6': list(pure_ipsv6), 'subnets': list(subnets), 'subnetsv6': list(subnetsv6), 'wpdomains': list(wpdomains)})
 
 if __name__ == '__main__':
 	run(app, host = 'localhost', port = 8080)
