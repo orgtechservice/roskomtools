@@ -49,4 +49,4 @@ def try_process(filename, db):
 if os.isatty(sys.stdin.fileno()):
 	try_process('dump.xml', db)
 else:
-	try_process('/tmp/dump.xml', db)
+	try_process('/var/lib/roskomtools', db)
