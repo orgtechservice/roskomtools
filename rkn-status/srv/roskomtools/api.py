@@ -14,6 +14,7 @@ config.read('/etc/roskom/tools.ini')
 # База данных
 db = sqlite3.connect(config['roskomtools']['database'])
 db.create_function('regexp', 2, lambda x, y: 1 if re.search(x, y) else 0)
+db.create_function('pow', 2, lambda x, y: x ** y)
 
 application = Bottle()
 
@@ -135,6 +136,14 @@ def blocked_ips_page():
 			continue
 
 	return json.dumps({'ips': list(pure_ips), 'ipsv6': list(pure_ipsv6), 'subnets': list(subnets), 'subnetsv6': list(subnetsv6), 'wpdomains': list(wpdomains)})
+
+@application.route('/ip-count')
+def ip_count_page():
+	response.content_type = 'text/plain'
+	cursor = db.cursor()
+	cursor.execute("SELECT SUM(POW(2, 32 - SUBSTR(subnet_text, INSTR(subnet_text, '/') + 1))) AS c FROM subnets")
+	rows = cursor.fetchall()
+	return json.dumps({'count': int(rows[0][0])})
 
 if __name__ == '__main__':
 	run(app, host = 'localhost', port = 8080)
