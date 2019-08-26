@@ -163,12 +163,24 @@ def search_record_by_id_page(content_id):
 		content = rows[0]
 
 		cursor.execute("SELECT * FROM urls WHERE url_content_id = ?", (int(content_id),))
-		urls = cursor.fetchall()
+		content.update({'urls': cursor.fetchall()})
 
 		cursor.execute("SELECT * FROM domains WHERE domain_content_id = ?", (int(content_id),))
-		domains = cursor.fetchall()
+		content.update({'domains': cursor.fetchall()})
 
-		return json.dumps({'content': content, 'urls': urls, 'domains': domains})
+		cursor.execute("SELECT * FROM ips WHERE ip_content_id = ?", (int(content_id),))
+		content.update({'ips': cursor.fetchall()})
+
+		cursor.execute("SELECT * FROM subnets WHERE subnet_content_id = ?", (int(content_id),))
+		content.update({'subnets': cursor.fetchall()})
+
+		cursor.execute("SELECT * FROM ipsv6 WHERE ip_content_id = ?", (int(content_id),))
+		content.update({'ipsv6': cursor.fetchall()})
+
+		cursor.execute("SELECT * FROM subnetsv6 WHERE subnet_content_id = ?", (int(content_id),))
+		content.update({'subnetsv6': cursor.fetchall()})
+
+		return json.dumps(content)
 	else:
 		response.status = 404
 		response.content_type = 'text/plain'
