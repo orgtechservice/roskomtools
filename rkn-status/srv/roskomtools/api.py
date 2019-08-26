@@ -153,6 +153,21 @@ def ip_count_page():
 	rows = cursor.fetchall()
 	return json.dumps({'count': int(rows[0]['c'])})
 
+def describe_content_record(content, cursor):
+	content_id = int(content['content_id'])
+	cursor.execute("SELECT * FROM urls WHERE url_content_id = ?", (content_id,))
+	content.update({'urls': cursor.fetchall()})
+	cursor.execute("SELECT * FROM domains WHERE domain_content_id = ?", (content_id,))
+	content.update({'domains': cursor.fetchall()})
+	cursor.execute("SELECT * FROM ips WHERE ip_content_id = ?", (content_id,))
+	content.update({'ips': cursor.fetchall()})
+	cursor.execute("SELECT * FROM subnets WHERE subnet_content_id = ?", (content_id,))
+	content.update({'subnets': cursor.fetchall()})
+	cursor.execute("SELECT * FROM ipsv6 WHERE ip_content_id = ?", (content_id,))
+	content.update({'ipsv6': cursor.fetchall()})
+	cursor.execute("SELECT * FROM subnetsv6 WHERE subnet_content_id = ?", (content_id,))
+	content.update({'subnetsv6': cursor.fetchall()})
+
 @application.route('/record-by-id/<content_id:int>')
 def search_record_by_id_page(content_id):
 	response.content_type = 'text/plain'
@@ -161,26 +176,58 @@ def search_record_by_id_page(content_id):
 	rows = cursor.fetchall()
 	if len(rows)  == 1:
 		content = rows[0]
-
-		cursor.execute("SELECT * FROM urls WHERE url_content_id = ?", (int(content_id),))
-		content.update({'urls': cursor.fetchall()})
-
-		cursor.execute("SELECT * FROM domains WHERE domain_content_id = ?", (int(content_id),))
-		content.update({'domains': cursor.fetchall()})
-
-		cursor.execute("SELECT * FROM ips WHERE ip_content_id = ?", (int(content_id),))
-		content.update({'ips': cursor.fetchall()})
-
-		cursor.execute("SELECT * FROM subnets WHERE subnet_content_id = ?", (int(content_id),))
-		content.update({'subnets': cursor.fetchall()})
-
-		cursor.execute("SELECT * FROM ipsv6 WHERE ip_content_id = ?", (int(content_id),))
-		content.update({'ipsv6': cursor.fetchall()})
-
-		cursor.execute("SELECT * FROM subnetsv6 WHERE subnet_content_id = ?", (int(content_id),))
-		content.update({'subnetsv6': cursor.fetchall()})
-
+		describe_content_record(content, cursor)
 		return json.dumps(content)
+	else:
+		response.status = 404
+		response.content_type = 'text/plain'
+		return json.dumps({'error': 404})
+
+@application.route('/records-by-domain/<domain>')
+def search_records_by_domain_page(domain):
+	domain = '%' + domain
+	response.content_type = 'text/plain'
+	cursor = db.cursor()
+	cursor.execute("SELECT * FROM content WHERE content_id IN (SELECT domain_content_id FROM domains WHERE domain_text LIKE ?)", (domain,))
+	rows = cursor.fetchall()
+	if len(rows) != 0:
+		for content in rows:
+			describe_content_record(content, cursor)
+
+		return json.dumps(rows)
+	else:
+		response.status = 404
+		response.content_type = 'text/plain'
+		return json.dumps({'error': 404})
+
+@application.route('/records-by-url/<url>')
+def search_records_by_url_page(url):
+	url = '%' + url + '%'
+	response.content_type = 'text/plain'
+	cursor = db.cursor()
+	cursor.execute("SELECT * FROM content WHERE content_id IN (SELECT url_content_id FROM urls WHERE url_text LIKE ?)", (url,))
+	rows = cursor.fetchall()
+	if len(rows) != 0:
+		for content in rows:
+			describe_content_record(content, cursor)
+
+		return json.dumps(rows)
+	else:
+		response.status = 404
+		response.content_type = 'text/plain'
+		return json.dumps({'error': 404})
+
+@application.route('/records-by-ip/<ip>')
+def search_records_by_ip_page(ip):
+	response.content_type = 'text/plain'
+	cursor = db.cursor()
+	cursor.execute("SELECT * FROM content WHERE content_id IN (SELECT ip_content_id FROM ips WHERE ip_text == ?)", (ip,))
+	rows = cursor.fetchall()
+	if len(rows) != 0:
+		for content in rows:
+			describe_content_record(content, cursor)
+
+		return json.dumps(rows)
 	else:
 		response.status = 404
 		response.content_type = 'text/plain'
