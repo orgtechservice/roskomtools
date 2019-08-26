@@ -11,10 +11,18 @@ from urllib.parse import urlparse
 config = configparser.ConfigParser()
 config.read('/etc/roskom/tools.ini')
 
+# Костыль
+def dict_factory(cursor, row):
+	d = {}
+	for idx, col in enumerate(cursor.description):
+		d[col[0]] = row[idx]
+	return d
+
 # База данных
 db = sqlite3.connect(config['roskomtools']['database'])
 db.create_function('regexp', 2, lambda x, y: 1 if re.search(x, y) else 0)
 db.create_function('pow', 2, lambda x, y: x ** y)
+db.row_factory = dict_factory
 
 application = Bottle()
 
@@ -23,7 +31,7 @@ def home_page():
 	response.content_type = 'text/plain'
 	cursor = db.cursor()
 	try:
-		statement = cursor.execute("SELECT check_id, check_when, check_total, check_available, check_minutes, check_seconds, check_maxrss FROM checks ORDER BY check_when DESC LIMIT 1")
+		statement = cursor.execute("SELECT * FROM checks ORDER BY check_when DESC LIMIT 1")
 	except:
 		return '{}'
 	result = statement.fetchall()
@@ -32,13 +40,13 @@ def home_page():
 	else:
 		check = result[0]
 		reply = {
-			'check_id': int(check[0]),
-			'when': int(check[1]),
-			'total_links': int(check[2]),
-			'available_links': int(check[3]),
-			'duration_minutes': int(check[4]),
-			'duration_seconds': int(check[5]),
-			'maxrss': int(check[6]),
+			'check_id': int(check['check_id']),
+			'when': int(check['check_when']),
+			'total_links': int(check['check_total']),
+			'available_links': int(check['check_available']),
+			'duration_minutes': int(check['check_minutes']),
+			'duration_seconds': int(check['check_seconds']),
+			'maxrss': int(check['check_maxrss']),
 		}
 		return json.dumps(reply)
 
@@ -47,7 +55,7 @@ def last_load_page():
 	response.content_type = 'text/plain'
 	cursor = db.cursor()
 	try:
-		statement = cursor.execute("SELECT load_id, load_when, load_state, load_code FROM loads ORDER BY load_when DESC LIMIT 1")
+		statement = cursor.execute("SELECT * FROM loads ORDER BY load_when DESC LIMIT 1")
 	except:
 		return '{}'
 	result = statement.fetchall()
@@ -56,10 +64,10 @@ def last_load_page():
 	else:
 		load = result[0]
 		reply = {
-			'check_id': int(load[0]),
-			'when': int(load[1]),
-			'state': int(load[2]),
-			'code': load[3],
+			'load_id': int(load['load_id']),
+			'when': int(load['load_when']),
+			'state': int(load['load_state']),
+			'code': load['load_code'],
 		}
 		return json.dumps(reply)
 
@@ -68,7 +76,7 @@ def last_successful_load_page():
 	response.content_type = 'text/plain'
 	cursor = db.cursor()
 	try:
-		statement = cursor.execute("SELECT load_id, load_when, load_code FROM loads WHERE load_state = 0 ORDER BY load_when DESC LIMIT 1")
+		statement = cursor.execute("SELECT * FROM loads WHERE load_state = 0 ORDER BY load_when DESC LIMIT 1")
 	except:
 		return '{}'
 	result = statement.fetchall()
@@ -77,9 +85,9 @@ def last_successful_load_page():
 	else:
 		load = result[0]
 		reply = {
-			'check_id': int(load[0]),
-			'when': int(load[1]),
-			'code': load[2],
+			'load_id': int(load['load_id']),
+			'when': int(load['load_when']),
+			'code': load['load_code'],
 		}
 		return json.dumps(reply)
 
@@ -109,28 +117,28 @@ def blocked_ips_page():
 	# Quering IPs from registry
 	cursor.execute("SELECT ip_text FROM ips WHERE ip_content_id IN (SELECT content_id FROM content WHERE content_block_type = 'ip')")
 	for row in cursor.fetchall():
-		pure_ips.add(row[0])
+		pure_ips.add(row['ip_text'])
 
 	# Quering IPv6s from registry
 	cursor.execute("SELECT ip_text FROM ipsv6 WHERE ip_content_id IN (SELECT content_id FROM content WHERE content_block_type = 'ip')")
 	for row in cursor.fetchall():
-		pure_ipsv6.add(row[0])
+		pure_ipsv6.add(row['ip_text'])
 
 	# Quering IPv4 subnets from registry
 	cursor.execute("SELECT subnet_text FROM subnets")
 	for row in cursor.fetchall():
-		subnets.add(row[0])
+		subnets.add(row['subnet_text'])
 
 	# Quering IPv6 subnets from registry
 	cursor.execute("SELECT subnet_text FROM subnetsv6")
 	for row in cursor.fetchall():
-		subnetsv6.add(row[0])
+		subnetsv6.add(row['subnet_text'])
 
 	# Quering wrong-port domains
 	cursor.execute("SELECT url_text FROM urls WHERE url_text REGEXP '^https?://[^:/]+:[0-9]+'")
 	for row in cursor.fetchall():
 		try:
-			info = urlparse(row[0])
+			info = urlparse(row['url_text'])
 			wpdomains.add(info.hostname)
 		except:
 			continue
@@ -143,7 +151,29 @@ def ip_count_page():
 	cursor = db.cursor()
 	cursor.execute("SELECT SUM(POW(2, 32 - SUBSTR(subnet_text, INSTR(subnet_text, '/') + 1))) AS c FROM subnets")
 	rows = cursor.fetchall()
-	return json.dumps({'count': int(rows[0][0])})
+	return json.dumps({'count': int(rows[0]['c'])})
+
+@application.route('/record-by-id/<content_id:int>')
+def search_record_by_id_page(content_id):
+	response.content_type = 'text/plain'
+	cursor = db.cursor()
+	cursor.execute("SELECT * FROM content WHERE content_id = ?", (int(content_id),))
+	rows = cursor.fetchall()
+	if len(rows)  == 1:
+		content = rows[0]
+
+		cursor.execute("SELECT * FROM urls WHERE url_content_id = ?", (int(content_id),))
+		urls = cursor.fetchall()
+
+		cursor.execute("SELECT * FROM domains WHERE domain_content_id = ?", (int(content_id),))
+		domains = cursor.fetchall()
+
+		return json.dumps({'content': content, 'urls': urls, 'domains': domains})
+	else:
+		response.status = 404
+		response.content_type = 'text/plain'
+		return json.dumps({'error': 404})
+
 
 if __name__ == '__main__':
-	run(app, host = 'localhost', port = 8080)
+	run(application, host = 'localhost', port = 8080)
