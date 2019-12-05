@@ -145,6 +145,36 @@ def blocked_ips_page():
 
 	return json.dumps({'ips': list(pure_ips), 'ipsv6': list(pure_ipsv6), 'subnets': list(subnets), 'subnetsv6': list(subnetsv6), 'wpdomains': list(wpdomains)})
 
+@application.route('/blocked-ips-short')
+def blocked_ips_short_page():
+	response.content_type = 'text/plain'
+	cursor = db.cursor()
+
+	subnets = set()
+	subnetsv6 = set()
+	wpdomains = set()
+
+	# Quering IPv4 subnets from registry
+	cursor.execute("SELECT subnet_text FROM subnets")
+	for row in cursor.fetchall():
+		subnets.add(row['subnet_text'])
+
+	# Quering IPv6 subnets from registry
+	cursor.execute("SELECT subnet_text FROM subnetsv6")
+	for row in cursor.fetchall():
+		subnetsv6.add(row['subnet_text'])
+
+	# Quering wrong-port domains
+	cursor.execute("SELECT url_text FROM urls WHERE url_text REGEXP '^https?://[^:/]+:[0-9]+'")
+	for row in cursor.fetchall():
+		try:
+			info = urlparse(row['url_text'])
+			wpdomains.add(info.hostname)
+		except:
+			continue
+
+	return json.dumps({'ips': list(pure_ips), 'ipsv6': list(pure_ipsv6), 'subnets': list(subnets), 'subnetsv6': list(subnetsv6), 'wpdomains': list(wpdomains)})
+
 @application.route('/ip-count')
 def ip_count_page():
 	response.content_type = 'text/plain'
