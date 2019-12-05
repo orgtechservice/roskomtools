@@ -173,7 +173,7 @@ def blocked_ips_short_page():
 		except:
 			continue
 
-	return json.dumps({'ips': list(pure_ips), 'ipsv6': list(pure_ipsv6), 'subnets': list(subnets), 'subnetsv6': list(subnetsv6), 'wpdomains': list(wpdomains)})
+	return json.dumps({'subnets': list(subnets), 'subnetsv6': list(subnetsv6), 'wpdomains': list(wpdomains)})
 
 @application.route('/ip-count')
 def ip_count_page():
