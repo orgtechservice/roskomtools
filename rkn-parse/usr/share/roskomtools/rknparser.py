@@ -4,6 +4,9 @@ from lxml import etree
 
 re_link = r'(https?)://(([^/]*)\.([^/:\.]*))(:(\d+))?'
 
+def parse_ts(ts):
+	return 0
+
 def parse_registry(filename, database):
 	cursor = database.cursor()
 
@@ -24,7 +27,7 @@ def parse_registry(filename, database):
 		try:
 			content_id = str(item.get('id', default = '0'))
 			content_block_type = item.get('blockType', default = 'default')
-			content_ts = int(item.get('ts', default = 0))
+			content_ts = parse_ts(item.get('ts', default = '0'))
 			content_include_time = str(item.get('includeTime', default = ''))
 			content_urgency_type = int(item.get('urgencyType', default = 0))
 			content_entry_type = int(item.get('entryType', default = 0))
