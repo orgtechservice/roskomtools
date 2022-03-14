@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 
 # Python
+from math import fabs
 import sys, base64, signal, time, zipfile, os, configparser, sqlite3
+from simplejson import load
 
 # SUDS
 from suds.client import Client
@@ -17,6 +19,7 @@ db = sqlite3.connect(config['roskomtools']['database'])
 
 cursor = db.cursor()
 cursor.execute("CREATE TABLE IF NOT EXISTS loads (load_id INTEGER PRIMARY KEY AUTOINCREMENT, load_when INTEGER, load_code TEXT, load_state INTEGER)")
+cursor.execute("CREATE TABLE IF NOT EXISTS soc_loads (load_id INTEGER PRIMARY KEY AUTOINCREMENT, load_when INTEGER, load_code TEXT, load_state INTEGER)")
 cursor.close()
 db.commit()
 
@@ -47,12 +50,19 @@ class RoskomAPI:
 	def getLastDumpDate(self):
 		return self.service.getLastDumpDate()
 
+	def getLastDumpDateEx(self):
+		return self.service.getLastDumpDateEx()
+
 	def sendRequest(self):
 		response = self.service.sendRequest(self.request_xml, self.request_xml_sign, '2.2')
 		return dict(((k, v.encode('utf-8')) if isinstance(v, Text) else (k, v)) for (k, v) in response)
 
 	def getResult(self, code):
 		response = self.service.getResult(code)
+		return dict(((k, v.encode('utf-8')) if isinstance(v, Text) else (k, v)) for (k, v) in response)
+
+	def getResultSocResources(self, code):
+		response = self.service.getResultSocResources(code)
 		return dict(((k, v.encode('utf-8')) if isinstance(v, Text) else (k, v)) for (k, v) in response)
 
 class Command(object):
@@ -73,6 +83,102 @@ class Command(object):
 	def handle_exception(self, e):
 		print(str(e))
 		exit(-1)
+
+	def checkForbiddenResources(self, load_id):
+		self.print_message("Checking result")
+		result = None
+		try:
+			result = self.api.getResult(self.code)
+		except Exception as e:
+			self.handle_exception(e)
+
+		if (result is not None) and ('result' in result) and result['result']:
+			try:
+				self.print_message("Got proper result, writing zip file")
+				filename = "registry.zip"
+				zip_archive = result['registerZipArchive']
+				data = base64.b64decode(zip_archive)
+				with open(filename, 'wb') as file:
+					data = base64.b64decode(zip_archive)
+					file.write(data)
+				self.print_message("ZIP file saved")
+
+				with zipfile.ZipFile(filename, 'r') as file:
+					if self.console:
+						file.extractall()
+					else:
+						file.extractall('/var/lib/roskomtools')
+					
+				cursor = db.cursor()
+				cursor.execute("UPDATE loads SET load_state = 0 WHERE load_id = ?", (load_id,))
+				cursor.close()
+				db.commit()
+
+				self.print_message("ZIP file extracted")
+				self.print_message("Job done!")
+				return True
+			except Exception as e:
+				self.handle_exception(e)
+		else:
+			try:
+				if result['resultComment'].decode('utf-8') == 'запрос обрабатывается':
+					self.print_message("Still not ready")
+					return False
+				else:
+					error = result['resultComment'].decode('utf-8')
+					self.print_message("getRclientesult failed with code %d: %s" % (result['resultCode'], error))
+					exit(-1)
+			except Exception as e:
+				self.handle_exception(e)
+
+	def checkSocResources(self, load_id):
+		self.print_message("Checking soc result")
+		result = None
+		try:
+			result = self.api.getResultSocResources(self.code)
+		except Exception as e:
+			self.handle_exception(e)
+
+		if (result is not None) and ('result' in result) and result['result']:
+			try:
+				self.print_message("Got proper result, writing zip file")
+				filename = "socRegistry.zip"
+				zip_archive = result['registerZipArchive']
+				data = base64.b64decode(zip_archive)
+				with open(filename, 'wb') as file:
+					data = base64.b64decode(zip_archive)
+					file.write(data)
+				self.print_message("ZIP file saved")
+
+				with zipfile.ZipFile(filename, 'r') as file:
+					if self.console:
+						file.extractall()
+					else:
+						file.extractall('/var/lib/roskomtools')
+					
+				cursor = db.cursor()
+				cursor.execute("UPDATE soc_loads SET load_state = 0 WHERE load_id = ?", (load_id,))
+				cursor.close()
+				db.commit()
+
+				self.print_message("ZIP file soc resources extracted")
+				self.print_message("Job done!")
+				return True
+			except Exception as e:
+				self.handle_exception(e)
+		else:
+			try:
+				if result['resultComment'].decode('utf-8') == 'запрос обрабатывается':
+					self.print_message("Soc resources not ready")
+					return False
+				else:
+					error = result['resultComment'].decode('utf-8')
+					self.print_message("getRclientesult failed with code %d: %s" % (result['resultCode'], error))
+					exit(-1)
+			except Exception as e:
+				self.handle_exception(e)
+
+		
 
 	def handle(self, db, console = True):
 		self.console = console
@@ -96,7 +202,13 @@ class Command(object):
 		# Фактическая и записанная даты, можно сравнивать их и в зависимости от этого делать выгрузку, но мы сделаем безусловную
 		try:
 			dump_date = int(int(self.api.getLastDumpDate()) / 1000)
+			soc_dump_date = int(int(self.api.getLastDumpDateEx()['lastDumpDateSocResources']) / 1000)
 			our_last_dump = 0
+
+			if soc_dump_date > our_last_dump:
+				self.print_message("New registry soc resources dump avaible, proceeding")
+			else:
+				self.print_message("No changes in dump.xml, but forcing the process")
 
 			if dump_date > our_last_dump:
 				self.print_message("New registry dump available, proceeding")
@@ -109,6 +221,7 @@ class Command(object):
 		when = int(time.time())
 		data = (when, '', 1)
 		cursor.execute("INSERT INTO loads (load_when, load_code, load_state) VALUES (?, ?, ?)", data)
+		cursor.execute("INSERT INTO soc_loads (load_when, load_code, load_state) VALUES (?, ?, ?)", data)
 		load_id = cursor.lastrowid
 		cursor.close()
 		db.commit()
@@ -124,6 +237,7 @@ class Command(object):
 		cursor = db.cursor()
 		data = (self.code, load_id)
 		cursor.execute("UPDATE loads SET load_code = ?, load_state = 2 WHERE load_id = ?", data)
+		cursor.execute("UPDATE soc_loads SET load_code = ?, load_state = 2 WHERE load_id = ?", data)
 		cursor.close()
 		db.commit()
 
@@ -132,54 +246,18 @@ class Command(object):
 		except:
 			delay = 30
 	
+		forbiddenStatus = False
+		socStatus = False
+
 		while True:
 			self.print_message("Waiting %d seconds" % (delay,))
 			time.sleep(delay)
-			self.print_message("Checking result")
-			result = None
-			try:
-				result = self.api.getResult(self.code)
-			except Exception as e:
-				self.handle_exception(e)
 
-			if (result is not None) and ('result' in result) and result['result']:
-				try:
-					self.print_message("Got proper result, writing zip file")
-					filename = "registry.zip"
-					zip_archive = result['registerZipArchive']
-					data = base64.b64decode(zip_archive)
-					with open(filename, 'wb') as file:
-						data = base64.b64decode(zip_archive)
-						file.write(data)
-					self.print_message("ZIP file saved")
-
-					with zipfile.ZipFile(filename, 'r') as file:
-						if self.console:
-							file.extractall()
-						else:
-							file.extractall('/var/lib/roskomtools')
-					
-					cursor = db.cursor()
-					cursor.execute("UPDATE loads SET load_state = 0 WHERE load_id = ?", (load_id,))
-					cursor.close()
-					db.commit()
-
-					self.print_message("ZIP file extracted")
-					self.print_message("Job done!")
-					break
-				except Exception as e:
-					self.handle_exception(e)
-			else:
-				try:
-					if result['resultComment'].decode('utf-8') == 'запрос обрабатывается':
-						self.print_message("Still not ready")
-						continue
-					else:
-						error = result['resultComment'].decode('utf-8')
-						self.print_message("getRclientesult failed with code %d: %s" % (result['resultCode'], error))
-						exit(-1)
-				except Exception as e:
-					self.handle_exception(e)
+			if forbiddenStatus is not True: forbiddenStatus = self.checkForbiddenResources(load_id)
+			if socStatus is not True: socStatus = self.checkSocResources(load_id)
+			
+			if forbiddenStatus == False or socStatus == False: continue
+			else: break
 
 if __name__ == '__main__':
 	command = Command()

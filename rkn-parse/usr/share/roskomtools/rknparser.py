@@ -74,6 +74,44 @@ def parse_registry(filename, database):
 	cursor.close()
 	database.commit()
 
+def parse_soc_registry(filename, database):
+	cursor = database.cursor()
+
+	# Очистим таблицы
+	cursor.execute("DELETE FROM soc_content")
+	cursor.execute("DELETE FROM soc_resource")
+	cursor.execute("DELETE FROM soc_domain")
+	cursor.execute("DELETE FROM soc_ipsubnets")
+
+	# Заполним их заново
+	tree = etree.parse(filename)	
+	records = tree.xpath('//content')
+
+	for item in records:
+		try:
+			content_id = str(item.get('id', default = '0'))
+			content_include_time = str(item.get('includeTime', default = ''))
+			content_hash = item.get('hash', default = None)
+
+			data = (content_id, content_include_time, content_hash)
+			cursor.execute("INSERT INTO soc_content (content_id, content_include_time, content_hash) VALUES (?, ?, ?)", data)
+
+			for resourceName in item.xpath('resourceName'):
+				cursor.execute("INSERT INTO soc_resource (resource_content_id, resourceName) VALUES (?, ?)", (content_id, resourceName.text))
+
+			for domain in item.xpath('domain'):
+				cursor.execute("INSERT INTO soc_domain (domain_content_id, domain) VALUES (?, ?)", (content_id, domain.text))
+
+			for ipSubnet in item.xpath('ipSubnet'):
+				cursor.execute("INSERT INTO soc_ipsubnets (ipsubnet_content_id, ipsubnet) VALUES (?, ?)", (content_id, ipSubnet.text))
+		except:
+			continue
+
+	cursor.close()
+	database.commit()
+
+	return True
+
 """
 def using_wrong_port(groups):
 	return (groups[5] is not None) and (int(groups[5]) in [80, 8080])

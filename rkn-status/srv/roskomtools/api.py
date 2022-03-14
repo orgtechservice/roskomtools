@@ -263,6 +263,24 @@ def search_records_by_ip_page(ip):
 		response.content_type = 'text/plain'
 		return json.dumps({'error': 404})
 
+@application.route('/soc_resources')
+def soc_resources():
+	response.content_type = 'text/plain'
+	cursor = db.cursor()
+	cursor.execute("SELECT * FROM soc_content AS sc LEFT JOIN soc_resource AS sr ON sc.content_id = resource_content_id LEFT JOIN soc_domain AS sd ON sc.content_id = domain_content_id")
+	rows = cursor.fetchall()
+
+
+	if len(rows) != 0:
+		for content in rows:
+			content_id = int(content['content_id'])
+			content.update({'ips': cursor.execute("SELECT * FROM soc_ipsubnets WHERE ipsubnet_content_id = ?", (content_id,)).fetchall()})
+
+		return json.dumps(rows)
+	else:
+		response.status = 404
+		response.content_type = 'text/plain'
+		return json.dumps({'error': 404})
 
 if __name__ == '__main__':
 	run(application, host = 'localhost', port = 8080)
