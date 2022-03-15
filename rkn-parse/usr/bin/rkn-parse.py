@@ -38,7 +38,7 @@ def parseForbidden():
 	if os.isatty(sys.stdin.fileno()):
 		try_process('dump.xml', db, 'forbidden')
 	else:
-		try_process('/var/lib/roskomtools/dump.xml', db)
+		try_process('/var/lib/roskomtools/dump.xml', db, 'forbidden')
 
 def parseSoc():
 	cursor = db.cursor()
@@ -56,7 +56,7 @@ def parseSoc():
 	if os.isatty(sys.stdin.fileno()):
 		try_process('register.xml', db, 'soc')
 	else:
-		try_process('/var/lib/roskomtools/register.xml', db)
+		try_process('/var/lib/roskomtools/register.xml', db, 'soc')
 
 
 def try_process(filename, db, type):
