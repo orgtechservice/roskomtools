@@ -292,7 +292,7 @@ def social_ips():
 	for row in cursor.execute("SELECT * FROM soc_ipsubnets").fetchall():
 		subnets.add(row['ipsubnet'])
 
-	return json.dumps({'ips': list(), 'ipsv6': list(), 'subnets': list(subnets), 'ips': list(), 'wpdomains': list()})
+	return json.dumps({'ips': list(), 'ipsv6': list(), 'subnets': list(subnets), 'subnetsv6': list()})
 	
 
 if __name__ == '__main__':
