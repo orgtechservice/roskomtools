@@ -288,11 +288,16 @@ def social_ips():
 	cursor = db.cursor()
 
 	subnets = set()
+	ips = set()
 
 	for row in cursor.execute("SELECT * FROM soc_ipsubnets").fetchall():
-		subnets.add(row['ipsubnet'])
+		ipsubnet = str(row['ipsubnet'])
+		if ipsubnet.find('/32') > -1:
+			ips.add(ipsubnet.replace('/32', ''))
+		else:
+			subnets.add(ipsubnet)
 
-	return json.dumps({'ips': list(), 'ipsv6': list(), 'subnets': list(subnets), 'subnetsv6': list()})
+	return json.dumps({'ips': list(ips), 'ipsv6': list(), 'subnets': list(subnets), 'subnetsv6': list()})
 	
 
 if __name__ == '__main__':
