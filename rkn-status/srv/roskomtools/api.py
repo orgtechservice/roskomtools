@@ -282,5 +282,18 @@ def soc_resources():
 		response.content_type = 'application/json; charset=utf-8'
 		return json.dumps({'error': 404})
 
+@application.route('/social-ips')
+def social_ips():
+	response.content_type = 'application/json; charset=utf-8'
+	cursor = db.cursor()
+
+	subnets = set()
+
+	for row in cursor.execute("SELECT * FROM soc_ipsubnets").fetchall():
+		subnets.add(row['ipsubnet'])
+
+	return json.dumps({'ips': list(), 'ipsv6': list(), 'subnets': list(subnets), 'ips': list(), 'wpdomains': list()})
+	
+
 if __name__ == '__main__':
 	run(application, host = 'localhost', port = 8080)
