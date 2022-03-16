@@ -28,7 +28,7 @@ application = Bottle()
 
 @application.route('/last-check')
 def home_page():
-	response.content_type = 'text/plain'
+	response.content_type = 'application/json; charset=utf-8'
 	cursor = db.cursor()
 	try:
 		statement = cursor.execute("SELECT * FROM checks ORDER BY check_when DESC LIMIT 1")
@@ -52,7 +52,7 @@ def home_page():
 
 @application.route('/last-load')
 def last_load_page():
-	response.content_type = 'text/plain'
+	response.content_type = 'application/json; charset=utf-8'
 	cursor = db.cursor()
 	try:
 		statement = cursor.execute("SELECT * FROM loads ORDER BY load_when DESC LIMIT 1")
@@ -73,7 +73,7 @@ def last_load_page():
 
 @application.route('/last-successful-load')
 def last_successful_load_page():
-	response.content_type = 'text/plain'
+	response.content_type = 'application/json; charset=utf-8'
 	cursor = db.cursor()
 	try:
 		statement = cursor.execute("SELECT * FROM loads WHERE load_state = 0 ORDER BY load_when DESC LIMIT 1")
@@ -100,12 +100,12 @@ def dump_xml_page():
 			return static_file('dump.xml', root = '/var/lib/roskomtools', mimetype = 'text/xml')
 	
 	response.status = 403
-	response.content_type = 'text/plain'
+	response.content_type = 'application/json; charset=utf-8'
 	return json.dumps({'error': 403})
 
 @application.route('/blocked-ips')
 def blocked_ips_page():
-	response.content_type = 'text/plain'
+	response.content_type = 'application/json; charset=utf-8'
 	cursor = db.cursor()
 
 	pure_ips = set()
@@ -147,7 +147,7 @@ def blocked_ips_page():
 
 @application.route('/blocked-ips-short')
 def blocked_ips_short_page():
-	response.content_type = 'text/plain'
+	response.content_type = 'application/json; charset=utf-8'
 	cursor = db.cursor()
 
 	subnets = set()
@@ -177,7 +177,7 @@ def blocked_ips_short_page():
 
 @application.route('/ip-count')
 def ip_count_page():
-	response.content_type = 'text/plain'
+	response.content_type = 'application/json; charset=utf-8'
 	cursor = db.cursor()
 	cursor.execute("SELECT SUM(POW(2, 32 - SUBSTR(subnet_text, INSTR(subnet_text, '/') + 1))) AS c FROM subnets")
 	rows = cursor.fetchall()
@@ -200,7 +200,7 @@ def describe_content_record(content, cursor):
 
 @application.route('/record-by-id/<content_id:int>')
 def search_record_by_id_page(content_id):
-	response.content_type = 'text/plain'
+	response.content_type = 'application/json; charset=utf-8'
 	cursor = db.cursor()
 	cursor.execute("SELECT * FROM content WHERE content_id = ?", (int(content_id),))
 	rows = cursor.fetchall()
@@ -210,13 +210,13 @@ def search_record_by_id_page(content_id):
 		return json.dumps(content)
 	else:
 		response.status = 404
-		response.content_type = 'text/plain'
+		response.content_type = 'application/json; charset=utf-8'
 		return json.dumps({'error': 404})
 
 @application.route('/records-by-domain/<domain>')
 def search_records_by_domain_page(domain):
 	domain = '%' + domain
-	response.content_type = 'text/plain'
+	response.content_type = 'application/json; charset=utf-8'
 	cursor = db.cursor()
 	cursor.execute("SELECT * FROM content WHERE content_id IN (SELECT domain_content_id FROM domains WHERE domain_text LIKE ?)", (domain,))
 	rows = cursor.fetchall()
@@ -227,13 +227,13 @@ def search_records_by_domain_page(domain):
 		return json.dumps(rows)
 	else:
 		response.status = 404
-		response.content_type = 'text/plain'
+		response.content_type = 'application/json; charset=utf-8'
 		return json.dumps({'error': 404})
 
 @application.route('/records-by-url/<url>')
 def search_records_by_url_page(url):
 	url = '%' + url + '%'
-	response.content_type = 'text/plain'
+	response.content_type = 'application/json; charset=utf-8'
 	cursor = db.cursor()
 	cursor.execute("SELECT * FROM content WHERE content_id IN (SELECT url_content_id FROM urls WHERE url_text LIKE ?)", (url,))
 	rows = cursor.fetchall()
@@ -244,12 +244,12 @@ def search_records_by_url_page(url):
 		return json.dumps(rows)
 	else:
 		response.status = 404
-		response.content_type = 'text/plain'
+		response.content_type = 'application/json; charset=utf-8'
 		return json.dumps({'error': 404})
 
 @application.route('/records-by-ip/<ip>')
 def search_records_by_ip_page(ip):
-	response.content_type = 'text/plain'
+	response.content_type = 'application/json; charset=utf-8'
 	cursor = db.cursor()
 	cursor.execute("SELECT * FROM content WHERE content_id IN (SELECT ip_content_id FROM ips WHERE ip_text == ?)", (ip,))
 	rows = cursor.fetchall()
@@ -260,12 +260,12 @@ def search_records_by_ip_page(ip):
 		return json.dumps(rows)
 	else:
 		response.status = 404
-		response.content_type = 'text/plain'
+		response.content_type = 'application/json; charset=utf-8'
 		return json.dumps({'error': 404})
 
-@application.route('/soc_resources')
+@application.route('/soc-resources')
 def soc_resources():
-	response.content_type = 'text/plain'
+	response.content_type = 'application/json; charset=utf-8'
 	cursor = db.cursor()
 	cursor.execute("SELECT * FROM soc_content AS sc LEFT JOIN soc_resource AS sr ON sc.content_id = resource_content_id LEFT JOIN soc_domain AS sd ON sc.content_id = domain_content_id")
 	rows = cursor.fetchall()
@@ -279,7 +279,7 @@ def soc_resources():
 		return json.dumps(rows)
 	else:
 		response.status = 404
-		response.content_type = 'text/plain'
+		response.content_type = 'application/json; charset=utf-8'
 		return json.dumps({'error': 404})
 
 if __name__ == '__main__':
